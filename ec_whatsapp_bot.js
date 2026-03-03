@@ -85,7 +85,7 @@ client.on('message', async (msg) => {
     // Extract user phone (remove @c.us or @g.us)
     const userPhone = msg.from.replace(/@c\.us|@g\.us/g, '');
     const sessionDir = getUserSessionDir(userPhone);
-    
+
     let downloadedMediaPath = "";
 
     // 4.1 Handle Media Downloads
@@ -124,7 +124,7 @@ client.on('message', async (msg) => {
     if (msg.body) {
         // First 2 chars = Command Code (e.g., "sh")
         const codeMatch = msg.body.trim().match(/^([a-zA-Z0-9]{2})(?:\s+(.*))?$/);
-        
+
         if (codeMatch) {
             const code = codeMatch[1].toLowerCase();
             const params = codeMatch[2] ? codeMatch[2].trim() : "";
@@ -132,8 +132,8 @@ client.on('message', async (msg) => {
             if (cmdMap[code]) {
                 const config = cmdMap[code];
 
-                // Build the command: e.g., bash img.sh "user input text" "/absolute/media/path.jpg"
-                let fullShellCmd = `${config.base_cmd} ${config.script_name} "${params}"`;
+                // Build the command: e.g., bash img.sh "userPhone" "code" "user input text" "/absolute/media/path.jpg"
+                let fullShellCmd = `${config.base_cmd} ${config.script_name} "${userPhone}" "${code}" "${params}"`;
                 if (downloadedMediaPath) {
                     fullShellCmd += ` "${downloadedMediaPath}"`;
                 }
@@ -154,7 +154,7 @@ client.on('message', async (msg) => {
                         if (responseData.type === 'media') {
                             const mediaToSend = MessageMedia.fromFilePath(responseData.file_path);
                             await client.sendMessage(msg.from, mediaToSend, { caption: responseData.content || '' });
-                            
+
                             // Log the outgoing bot reply
                             logChatHistory(userPhone, {
                                 timestamp: new Date().toISOString(),
@@ -166,7 +166,7 @@ client.on('message', async (msg) => {
                             });
                         } else {
                             msg.reply(responseData.content || stdout);
-                            
+
                             logChatHistory(userPhone, {
                                 timestamp: new Date().toISOString(),
                                 from: 'BOT',
@@ -179,7 +179,7 @@ client.on('message', async (msg) => {
                         // If it's not JSON, just treat it as a plain text reply
                         const replyText = stdout.trim() || "Command executed.";
                         msg.reply(replyText);
-                        
+
                         logChatHistory(userPhone, {
                             timestamp: new Date().toISOString(),
                             from: 'BOT',

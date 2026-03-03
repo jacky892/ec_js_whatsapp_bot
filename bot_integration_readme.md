@@ -15,12 +15,20 @@ The bot parses the user's message into two main components:
 ### Argument Injection
 Your script will be executed with the following arguments:
 
-- **Argument 1 (`$1`): The Message Text**
-  This contains the `{parameters}` part of the WhatsApp message.
-  *Example: If the user sends `im convert to png`, `$1` will be exactly `"convert to png"`.*
+- **Argument 1 (`$1`): The User ID (Phone Number)**
+  The WhatsApp phone number of the user invoking the CLI (without the `@c.us` domain). This is useful for maintaining per-user session history on your CLI side.
+  *Example: `85212345678`*
 
-- **Argument 2 (`$2`): The Media Path (Optional)**
-  If the user attached an image, document, or audio file, the bot downloads it immediately and passes the absolute file path to the local file as `$2`.
+- **Argument 2 (`$2`): The Command Code**
+  The 2-character command code that triggered the script.
+  *Example: `im`*
+
+- **Argument 3 (`$3`): The Message Text**
+  This contains the `{parameters}` part of the WhatsApp message.
+  *Example: If the user sends `im convert to png`, `$3` will be exactly `"convert to png"`.*
+
+- **Argument 4 (`$4`): The Media Path (Optional)**
+  If the user attached an image, document, or audio file, the bot downloads it immediately and passes the absolute file path to the local file as `$4`.
   *Example: `/Users/jackylee/aimv/agents/gsd/ec_js_whatsapp_bot/chat_session/123456789/timestamp_msgid.jpeg`*
 
 ---
@@ -103,10 +111,13 @@ Imagine we are building a CLI tool that takes a user's image, renames it, and se
 ```bash
 #!/bin/bash
 
-USER_TEXT="$1"
-MEDIA_PATH="$2"
+USER_ID="$1"
+CMD_CODE="$2"
+USER_TEXT="$3"
+MEDIA_PATH="$4"
 
 # We must send debug logs to standard error to prevent corrupting the JSON stdout!
+echo "Debug: Executing command $CMD_CODE for user $USER_ID" >&2
 echo "Debug: Received text: $USER_TEXT" >&2
 
 if [ -z "$MEDIA_PATH" ]; then
@@ -116,7 +127,7 @@ if [ -z "$MEDIA_PATH" ]; then
     cat <<EOF
 {
   "type": "text",
-  "content": "You said: $USER_TEXT. But you didn't attach any media!"
+  "content": "Hello $USER_ID! You said: $USER_TEXT. But you didn't attach any media!"
 }
 EOF
 
@@ -131,7 +142,7 @@ else
     cat <<EOF
 {
   "type": "media",
-  "content": "I received your file! Here is it sent right back to you.",
+  "content": "I received your file, $USER_ID! Here is it sent right back to you.",
   "file_path": "$MEDIA_PATH"
 }
 EOF
