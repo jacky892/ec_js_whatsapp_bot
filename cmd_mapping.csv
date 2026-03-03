@@ -1,0 +1,3 @@
+cmdcode,work_dir,base_cmd,script_name
+pf,.,bash,pdf.sh
+im,.,bash,img.sh
