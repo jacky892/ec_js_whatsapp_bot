@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parse/sync');
 const ini = require('ini');
+const { jsonrepair } = require('jsonrepair');
 
 // 1. Load Configurations
 // Load INI config
@@ -148,8 +149,16 @@ client.on('message', async (msg) => {
                     }
 
                     try {
-                        // Attempt to parse the CLI output as JSON
-                        const responseData = JSON.parse(stdout);
+                        // Extract JSON block using regex if there's leading/trailing text
+                        let jsonStr = stdout;
+                        const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            jsonStr = jsonMatch[0];
+                        }
+
+                        // Attempt to parse and repair the CLI output as JSON
+                        const repairedJson = jsonrepair(jsonStr);
+                        const responseData = JSON.parse(repairedJson);
 
                         if (responseData.type === 'media') {
                             const mediaToSend = MessageMedia.fromFilePath(responseData.file_path);
