@@ -6,13 +6,19 @@ const path = require('path');
 const csv = require('csv-parse/sync');
 const ini = require('ini');
 const { jsonrepair } = require('jsonrepair');
+const express = require('express');
+const bodyParser = require('body-parser');
 
 // 1. Load Configurations
 // Load INI config
 const configPath = path.join(__dirname, 'config.ini');
 let botConfig = {};
+let receiveWhitelist = [];
+let senderWhitelist = [];
 if (fs.existsSync(configPath)) {
     botConfig = ini.parse(fs.readFileSync(configPath, 'utf-8'));
+    receiveWhitelist = botConfig.receive_whitelist ? botConfig.receive_whitelist.split(',').map(s => s.trim()) : [];
+    senderWhitelist = botConfig.sender_whitelist ? botConfig.sender_whitelist.split(',').map(s => s.trim()) : [];
 } else {
     console.warn("config.ini not found, proceeding with default settings.");
 }
@@ -52,6 +58,50 @@ client.on('qr', (qr) => {
 
 client.on('ready', () => {
     console.log('Connected! The session is saved. No more QR codes needed.');
+
+    // Start Express API once client is ready
+    const app = express();
+    app.use(bodyParser.json());
+
+    app.post('/send', async (req, res) => {
+        try {
+            const { sender_token, userphone, text, media_path } = req.body;
+
+            if (senderWhitelist.length > 0 && !senderWhitelist.includes(sender_token)) {
+                return res.status(403).json({ success: false, error: "Sender not in whitelist" });
+            }
+            if (receiveWhitelist.length > 0 && !receiveWhitelist.includes(userphone)) {
+                return res.status(403).json({ success: false, error: "Receiver not in whitelist" });
+            }
+
+            const numberId = `${userphone}@c.us`;
+            if (media_path) {
+                const mediaToSend = MessageMedia.fromFilePath(media_path);
+                await client.sendMessage(numberId, mediaToSend, { caption: text || '' });
+            } else {
+                await client.sendMessage(numberId, text || '');
+            }
+
+            logChatHistory(userphone, {
+                timestamp: new Date().toISOString(),
+                from: 'BOT_API',
+                to: userphone,
+                type: media_path ? 'media' : 'text',
+                body: text || '',
+                mediaSent: media_path || null
+            });
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('API Send Error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    const port = botConfig.api_port || 3000;
+    app.listen(port, '127.0.0.1', () => {
+        console.log(`Internal Push API listening on http://127.0.0.1:${port}`);
+    });
 });
 
 client.on('authenticated', () => {
@@ -85,6 +135,13 @@ client.on('message', async (msg) => {
 
     // Extract user phone (remove @c.us or @g.us)
     const userPhone = msg.from.replace(/@c\.us|@g\.us/g, '');
+
+    // Whitelist check
+    if (receiveWhitelist.length > 0 && !receiveWhitelist.includes(userPhone)) {
+        msg.reply("You are not in the whitelist.");
+        return;
+    }
+
     const sessionDir = getUserSessionDir(userPhone);
 
     let downloadedMediaPath = "";
