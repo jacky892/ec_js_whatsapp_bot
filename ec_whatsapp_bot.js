@@ -17,10 +17,14 @@ const configPath = path.join(__dirname, 'config.ini');
 let botConfig = {};
 let receiveWhitelist = [];
 let senderWhitelist = [];
+let shellPath = '/bin/zsh';
 if (fs.existsSync(configPath)) {
     botConfig = ini.parse(fs.readFileSync(configPath, 'utf-8'));
     receiveWhitelist = botConfig.receive_whitelist ? botConfig.receive_whitelist.split(',').map(s => s.trim()) : [];
     senderWhitelist = botConfig.sender_whitelist ? botConfig.sender_whitelist.split(',').map(s => s.trim()) : [];
+    if (botConfig.shell_path) {
+        shellPath = botConfig.shell_path.trim();
+    }
 } else {
     console.warn("config.ini not found, proceeding with default settings.");
 }
@@ -29,6 +33,7 @@ if (DEBUG) {
     console.log("=== DEBUG BOOT ===");
     console.log("Receive Whitelist:", receiveWhitelist);
     console.log("Sender Whitelist:", senderWhitelist);
+    console.log("Shell Path:", shellPath);
 }
 
 // Load CSV Command Mapping
@@ -215,7 +220,7 @@ client.on('message', async (msg) => {
                 if (DEBUG) console.log(`[DEBUG EXEC] Executing in ${config.work_dir}: ${fullShellCmd}`);
 
                 // We pass the 'cwd' option so the subprocess starts in that folder
-                exec(fullShellCmd, { cwd: config.work_dir }, async (error, stdout, stderr) => {
+                exec(fullShellCmd, { cwd: config.work_dir, shell: shellPath }, async (error, stdout, stderr) => {
                     if (DEBUG) {
                         console.log(`[DEBUG] STDOUT:`, stdout);
                         console.log(`[DEBUG] STDERR:`, stderr);

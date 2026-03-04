@@ -46,6 +46,13 @@ cmdcode,work_dir,base_cmd,script_name
 - `base_cmd`: The interpreter (e.g., `bash`, `python3`, `node`).
 - `script_name`: The name of your executable file.
 
+### Execution Environment (Shell)
+By default, the subprocess executes commands inside `/bin/zsh` to avoid strict constraints found in `/bin/sh`. 
+If you need to change the interpreter shell globally, simply add a `shell_path` variable to the bot's `config.ini`:
+```ini
+shell_path=/bin/bash
+```
+
 ### Integration Strategy: Auto-Register via `bot_config.ini`
 
 If you are developing a standalone CLI tool in another directory, a good practice is to ship a `bot_config.ini` with your tool and provide an installation script to register your commands to the gateway's `cmd_mapping.csv` automatically.
