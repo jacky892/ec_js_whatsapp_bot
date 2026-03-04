@@ -9,6 +9,8 @@ const { jsonrepair } = require('jsonrepair');
 const express = require('express');
 const bodyParser = require('body-parser');
 
+const DEBUG = process.env.DEBUG === 'true' || process.env.DEBUG === '1';
+
 // 1. Load Configurations
 // Load INI config
 const configPath = path.join(__dirname, 'config.ini');
@@ -23,6 +25,12 @@ if (fs.existsSync(configPath)) {
     console.warn("config.ini not found, proceeding with default settings.");
 }
 
+if (DEBUG) {
+    console.log("=== DEBUG BOOT ===");
+    console.log("Receive Whitelist:", receiveWhitelist);
+    console.log("Sender Whitelist:", senderWhitelist);
+}
+
 // Load CSV Command Mapping
 const csvPath = path.join(__dirname, 'cmd_mapping.csv');
 let cmdMap = {};
@@ -30,12 +38,14 @@ if (fs.existsSync(csvPath)) {
     const fileContent = fs.readFileSync(csvPath, 'utf-8');
     const commandsList = csv.parse(fileContent, {
         columns: true,
-        skip_empty_lines: true
+        skip_empty_lines: true,
+        trim: true
     });
     // Convert to a dictionary for O(1) lookups by cmdcode
     commandsList.forEach(cmd => {
         cmdMap[cmd.cmdcode.toLowerCase()] = cmd;
     });
+    if (DEBUG) console.log("Cmd Map Loaded:", JSON.stringify(cmdMap, null, 2));
 } else {
     console.warn("cmd_mapping.csv not found.");
 }
@@ -136,6 +146,12 @@ client.on('message', async (msg) => {
     // Extract user phone (remove @c.us or @g.us)
     const userPhone = msg.from.replace(/@c\.us|@g\.us/g, '');
 
+    if (DEBUG) {
+        console.log(`\n[DEBUG INCOMING RCV] from: ${userPhone}`);
+        console.log(`Body: ${msg.body}`);
+        console.log(`Has Media: ${msg.hasMedia}`);
+    }
+
     // Whitelist check
     if (receiveWhitelist.length > 0 && !receiveWhitelist.includes(userPhone)) {
         msg.reply("You are not in the whitelist.");
@@ -196,10 +212,16 @@ client.on('message', async (msg) => {
                     fullShellCmd += ` "${downloadedMediaPath}"`;
                 }
 
-                console.log(`Executing in ${config.work_dir}: ${fullShellCmd}`);
+                if (DEBUG) console.log(`[DEBUG EXEC] Executing in ${config.work_dir}: ${fullShellCmd}`);
 
                 // We pass the 'cwd' option so the subprocess starts in that folder
                 exec(fullShellCmd, { cwd: config.work_dir }, async (error, stdout, stderr) => {
+                    if (DEBUG) {
+                        console.log(`[DEBUG] STDOUT:`, stdout);
+                        console.log(`[DEBUG] STDERR:`, stderr);
+                        if (error) console.log(`[DEBUG] ERROR:`, error);
+                    }
+
                     if (error) {
                         console.error(`Execution Error: ${error}`);
                         if (stderr) console.error(`Stderr: ${stderr}`);
