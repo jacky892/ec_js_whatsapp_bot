@@ -176,7 +176,31 @@ To prevent spam and unauthorized access, the bot enforces two whitelists configu
 1. **`receive_whitelist`**: A comma-separated list of allowed WhatsApp phone numbers.
    - If a CLI script or regular WhatsApp user tries to interact and the `userphone` is **not** in this list, the bot will automatically reply on WhatsApp with: *"You are not in the whitelist."* (and ignore the command).
 2. **`sender_whitelist`**: A comma-separated list of allowed API tokens for the POST endpoint.
-   - If the `sender_token` provided in the HTTP API payload is not in this list, the API will respond with a `403 Forbidden` error JSON:
      ```json
      { "success": false, "error": "Sender not in whitelist" }
      ```
+
+---
+
+## 6. Debugging the Bot
+
+If you are encountering issues where your scripts aren't being called (like `ENOENT` shell errors) or the bot is failing to parse your JSON outputs, you can launch the gateway in trace mode. This reveals raw subprocess commands, detailed routing logs, and raw error streams.
+
+You can enable debug mode by setting the `DEBUG` environment variable to `1` or `true`.
+
+**Option 1: Inline Prefix (Recommended)**
+```bash
+DEBUG=1 node ec_whatsapp_bot.js
+```
+
+**Option 2: Persistent Export**
+```bash
+export DEBUG=1
+node ec_whatsapp_bot.js
+```
+
+When enabled, the console will expansively log:
+- The loaded config whitelist mappings.
+- The raw text, payload, and sender IDs of every inbound message.
+- The exact shell command string being passed to `child_process.exec()`.
+- The raw `STDOUT` and `STDERR` streams arriving from your CLI script before they undergo JSON repair.
