@@ -149,3 +149,34 @@ EOF
 
 fi
 ```
+
+---
+
+## 5. Sending Messages via HTTP API (Push Notifications)
+
+You can also send messages asynchronously to users without them initiating a command. The bot exposes an internal HTTP API.
+
+### Endpoint
+`POST http://127.0.0.1:3000/send`
+
+### Payload Format (JSON)
+```json
+{
+  "sender_token": "my-secret-token",
+  "userphone": "85212345678",
+  "text": "Your report is ready.",
+  "media_path": "/absolute/path/to/report.pdf" 
+}
+```
+*Note: `media_path` is optional.*
+
+### Whitelisting Security
+To prevent spam and unauthorized access, the bot enforces two whitelists configured in `config.ini`:
+
+1. **`receive_whitelist`**: A comma-separated list of allowed WhatsApp phone numbers.
+   - If a CLI script or regular WhatsApp user tries to interact and the `userphone` is **not** in this list, the bot will automatically reply on WhatsApp with: *"You are not in the whitelist."* (and ignore the command).
+2. **`sender_whitelist`**: A comma-separated list of allowed API tokens for the POST endpoint.
+   - If the `sender_token` provided in the HTTP API payload is not in this list, the API will respond with a `403 Forbidden` error JSON:
+     ```json
+     { "success": false, "error": "Sender not in whitelist" }
+     ```

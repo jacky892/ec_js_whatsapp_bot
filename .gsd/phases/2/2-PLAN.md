@@ -32,22 +32,23 @@ Implement a local HTTP server that acts as a secure reverse-binding to the `what
 </task>
 
 <task type="auto">
-  <name>Implement the POST /send Endpoint</name>
+  <name>Implement Whitelist Validations and the POST /send Endpoint</name>
   <files>ec_whatsapp_bot.js</files>
   <action>
+    - Parse `receive_whitelist` and `sender_whitelist` from `botConfig`. Default to empty arrays.
+    - Hook into `client.on('message')`: Check if `userphone` is in `receive_whitelist`. If not, instantly `msg.reply("You are not in the whitelist.")` and `return`.
     - Create an `app.post('/send', ...)` route.
-    - Parse `req.body` expecting `userphone`, `text`, and optional `media_path`.
-    - Format `userphone` by appending `@c.us` automatically.
-    - If `media_path` is provided, use `MessageMedia.fromFilePath(media_path)` and send as caption using `client.sendMessage(numberId, mediaToSend, { caption: text })`. 
-    - Otherwise, just `client.sendMessage(numberId, text)`.
-    - IMPORTANT: Log the API-sent message into `chat_session/{userphone}/chat_log.jsonl` exactly like normal bot replies! Ensure `getUserSessionDir` is leveraged so the directory exists before logging.
-    - Return standard JSON `{ success: true, messageId: ... }` to the HTTP caller upon completion, or capture exceptions cleanly to 500 error messages.
+    - Extract `sender_token`, `userphone`, `text`, and optional `media_path` from `req.body`.
+    - IF `sender_token` is not in `sender_whitelist`, return `res.status(403).json({ success: false, error: "Sender not in whitelist" })`.
+    - IF `userphone` is not in `receive_whitelist`, return `res.status(403).json({ success: false, error: "Receiver not in whitelist" })`.
+    - IF validated: Use `MessageMedia` if `media_path` is present, push via `client.sendMessage()`, and log the message to `chat_session/{userphone}/chat_log.jsonl`.
+    - Return `{ success: true }` to the API caller.
   </action>
   <verify>node -c ec_whatsapp_bot.js</verify>
-  <done>API fully handles userphone sanitization, media attachment logic, file system logging, and graceful error messages.</done>
+  <done>API handles whitelists perfectly; WhatsApp interceptor rejects unknown phone numbers.</done>
 </task>
 
 ## Success Criteria
-- [ ] The bot exposes a listening port (`localhost:3000` by default).
-- [ ] A `curl` request containing a valid JSON payload successfully triggers a WhatsApp message.
-- [ ] All push notifications accurately render inside the user's `chat_log.jsonl` for persistency.
+- [ ] Unknown numbers messaging the bot get a "You are not in the whitelist" error and command routing is aborted.
+- [ ] API callers with invalid tokens get a 403 Forbidden sender error JSON.
+- [ ] API pushes accurately render inside the user's `chat_log.jsonl`.
