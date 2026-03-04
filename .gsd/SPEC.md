@@ -12,4 +12,10 @@ Build a generic WhatsApp Bot that maintains persistent chat history, saves media
 - Execute CLI scripts with `subprocess.exec` passing text as `$1` and media path as `$2`.
 - Read JSON responses from CLI to return rich text/media to WhatsApp.
 
+## Phase 2 Additions
+- Internal HTTP API (Express.js) listening on `127.0.0.1`.
+- `POST /send` endpoint that accepts JSON `{"userphone": "...", "text": "...", "media_path": "..."}`.
+- Relies on existing `whatsapp-web.js` client reference in memory.
+- Logs outgoing push notifications into the respective `chat_session/{userphone}/chat_log.jsonl` just like normal replies.
+
 Status: FINALIZED
