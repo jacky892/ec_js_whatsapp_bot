@@ -8,3 +8,4 @@ output/
 *.log
 tmp/
 .env
+cmd_mapping.csv
