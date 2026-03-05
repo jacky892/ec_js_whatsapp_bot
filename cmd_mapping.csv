@@ -1,3 +1,8 @@
 cmdcode,work_dir,base_cmd,script_name
 pf,.,bash,pdf.sh
 im,.,bash,img.sh
+he,/Users/jackylee/aimv/agents/jl_browser_skill,python3,cli_chatbot.py
+se,/Users/jackylee/aimv/agents/jl_browser_skill,python3,cli_chatbot.py
+rp,/Users/jackylee/aimv/agents/jl_browser_skill,python3,cli_chatbot.py
+ra,/Users/jackylee/aimv/agents/jl_browser_skill,python3,cli_chatbot.py
+tr,/Users/jackylee/aimv/agents/jl_browser_skill,python3,cli_chatbot.py

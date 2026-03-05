@@ -1,0 +1,10 @@
+node_modules/
+.wwebjs_auth/
+.wwebjs_cache/
+chat_session/
+media/
+output/
+.DS_Store
+*.log
+tmp/
+.env
